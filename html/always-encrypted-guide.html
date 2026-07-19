@@ -1,0 +1,1366 @@
+<title>Always Encrypted — คู่มือฉบับสมบูรณ์สำหรับ SQL Server</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #F5F6F9;
+    --bg-elevated: #FFFFFF;
+    --surface: #ECEEF3;
+    --surface-2: #E3E6EE;
+    --border: #DBDFE7;
+    --text: #171B2E;
+    --text-muted: #565F78;
+    --text-faint: #838CA6;
+    --accent: #A8752D;
+    --accent-soft: #F2E7D2;
+    --accent-strong: #7C5620;
+    --teal: #0E7A72;
+    --teal-soft: #DCEFEC;
+    --warn: #A85A1B;
+    --warn-soft: #F7E6D5;
+    --danger: #A3352C;
+    --danger-soft: #F6DEDB;
+    --good: #1E7A4C;
+    --good-soft: #DCEFE3;
+    --code-bg: #1B1E2C;
+    --code-text: #E7E9F2;
+    --code-muted: #8A93B5;
+    --shadow: 0 1px 2px rgba(23,27,46,.04), 0 8px 24px -12px rgba(23,27,46,.12);
+    --radius: 10px;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", "Leelawadee UI", "Noto Serif Thai", serif;
+    --font-body: "Leelawadee UI", "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Roboto, sans-serif;
+    --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0C0F1C;
+      --bg-elevated: #12172B;
+      --surface: #171D33;
+      --surface-2: #1D2440;
+      --border: #2A3150;
+      --text: #E7E9F2;
+      --text-muted: #9AA3C2;
+      --text-faint: #6E7896;
+      --accent: #D9A857;
+      --accent-soft: #2E2416;
+      --accent-strong: #EFC57C;
+      --teal: #3FBDB0;
+      --teal-soft: #123331;
+      --warn: #E08A46;
+      --warn-soft: #33220F;
+      --danger: #E5675F;
+      --danger-soft: #331614;
+      --good: #4FBE8B;
+      --good-soft: #10281c;
+      --code-bg: #090B14;
+      --code-text: #E7E9F2;
+      --code-muted: #7C87AD;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0C0F1C; --bg-elevated: #12172B; --surface: #171D33; --surface-2: #1D2440;
+    --border: #2A3150; --text: #E7E9F2; --text-muted: #9AA3C2; --text-faint: #6E7896;
+    --accent: #D9A857; --accent-soft: #2E2416; --accent-strong: #EFC57C;
+    --teal: #3FBDB0; --teal-soft: #123331;
+    --warn: #E08A46; --warn-soft: #33220F; --danger: #E5675F; --danger-soft: #331614;
+    --good: #4FBE8B; --good-soft: #10281c;
+    --code-bg: #090B14; --code-text: #E7E9F2; --code-muted: #7C87AD;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6);
+  }
+  :root[data-theme="light"] {
+    --bg: #F5F6F9; --bg-elevated: #FFFFFF; --surface: #ECEEF3; --surface-2: #E3E6EE;
+    --border: #DBDFE7; --text: #171B2E; --text-muted: #565F78; --text-faint: #838CA6;
+    --accent: #A8752D; --accent-soft: #F2E7D2; --accent-strong: #7C5620;
+    --teal: #0E7A72; --teal-soft: #DCEFEC;
+    --warn: #A85A1B; --warn-soft: #F7E6D5; --danger: #A3352C; --danger-soft: #F6DEDB;
+    --good: #1E7A4C; --good-soft: #DCEFE3;
+    --code-bg: #1B1E2C; --code-text: #E7E9F2; --code-muted: #8A93B5;
+    --shadow: 0 1px 2px rgba(23,27,46,.04), 0 8px 24px -12px rgba(23,27,46,.12);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16.5px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); color: var(--text); }
+
+  a { color: var(--teal); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--accent); }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 4px;
+  }
+
+  /* progress bar */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+    z-index: 60; transition: width .08s linear;
+  }
+
+  /* top bar */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 20px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-title {
+    display: flex; align-items: baseline; gap: 8px; font-family: var(--font-display);
+    font-size: 1.02rem; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar-title .mark { color: var(--accent); font-weight: 700; }
+  .navtoggle {
+    display: none; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 12px; border-radius: 8px; font: inherit; font-size: .88rem; cursor: pointer;
+  }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: 272px minmax(0,1fr); max-width: 1280px; margin: 0 auto; }
+  .toc {
+    position: sticky; top: 49px; align-self: start;
+    height: calc(100vh - 49px); overflow-y: auto;
+    padding: 28px 18px 60px 24px; border-right: 1px solid var(--border);
+    scrollbar-width: thin;
+  }
+  .toc-part { margin: 0 0 4px; padding: 16px 0 6px; font-family: var(--font-mono); font-size: .68rem;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+  .toc-part:first-child { padding-top: 0; }
+  .toc a {
+    display: block; padding: 6px 10px; margin: 1px 0; border-radius: 7px;
+    color: var(--text-muted); text-decoration: none; font-size: .92rem; line-height: 1.4;
+    border-left: 2px solid transparent;
+  }
+  .toc a:hover { background: var(--surface); color: var(--text); }
+  .toc a.active { color: var(--accent-strong); background: var(--accent-soft); border-left-color: var(--accent); font-weight: 600; }
+  .toc-num { font-family: var(--font-mono); color: var(--text-faint); margin-right: 6px; font-size: .82em; }
+
+  main.content { min-width: 0; padding: 0 28px 120px; }
+
+  /* masthead */
+  .masthead { max-width: 720px; margin: 0 auto; padding: 56px 0 40px; }
+  .kicker {
+    font-family: var(--font-mono); font-size: .74rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--teal); display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  }
+  .kicker::before { content: ""; width: 22px; height: 1px; background: var(--teal); }
+  h1.title {
+    font-family: var(--font-display); font-size: clamp(2.1rem, 4vw, 2.9rem); line-height: 1.15;
+    margin: 0 0 14px; text-wrap: balance; letter-spacing: -.01em;
+  }
+  h1.title em { font-style: normal; color: var(--accent-strong); }
+  .lede { font-size: 1.12rem; color: var(--text-muted); max-width: 62ch; margin: 0 0 26px; }
+  .pillrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    font-family: var(--font-mono); font-size: .74rem; padding: 5px 11px; border-radius: 100px;
+    border: 1px solid var(--border); color: var(--text-muted); background: var(--surface);
+  }
+
+  /* section rhythm */
+  section { max-width: 720px; margin: 0 auto; padding-top: 64px; }
+  section:last-of-type { padding-bottom: 20px; }
+  .part-label {
+    font-family: var(--font-mono); font-size: .74rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 10px;
+  }
+  h2 {
+    font-family: var(--font-display); font-size: 1.9rem; line-height: 1.25; text-wrap: balance;
+    margin: 0 0 6px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  h2 .chnum { color: var(--text-faint); font-weight: 400; margin-right: 10px; }
+  h3 {
+    font-family: var(--font-display); font-size: 1.32rem; margin: 40px 0 12px; text-wrap: balance;
+  }
+  h4 {
+    font-family: var(--font-body); font-weight: 700; font-size: 1.02rem; margin: 26px 0 8px; color: var(--text);
+  }
+  p { margin: 0 0 16px; }
+  section > p:first-of-type { margin-top: 20px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--text-faint); }
+  strong { color: var(--text); font-weight: 700; }
+  code:not(pre code) {
+    font-family: var(--font-mono); font-size: .87em; background: var(--surface);
+    border: 1px solid var(--border); padding: .1em .38em; border-radius: 5px; color: var(--accent-strong);
+  }
+
+  /* tables */
+  .tablewrap { overflow-x: auto; margin: 0 0 22px; border: 1px solid var(--border); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; min-width: 480px; }
+  thead th {
+    text-align: left; background: var(--accent-soft); color: var(--accent-strong);
+    font-family: var(--font-mono); font-size: .74rem; letter-spacing: .04em; text-transform: uppercase;
+    padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text-muted); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  tbody td:first-child { color: var(--text); font-weight: 600; }
+  td, th { font-variant-numeric: tabular-nums; }
+
+  /* code blocks */
+  .codecard {
+    background: var(--code-bg); color: var(--code-text); border-radius: var(--radius);
+    margin: 0 0 22px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid color-mix(in srgb, var(--code-bg) 60%, black);
+  }
+  .codebar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .codelang {
+    font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--teal);
+  }
+  .copybtn {
+    font-family: var(--font-mono); font-size: .72rem; background: transparent; color: var(--code-muted);
+    border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 3px 9px; cursor: pointer;
+  }
+  .copybtn:hover { color: var(--code-text); border-color: rgba(255,255,255,.3); }
+  .codecard pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+  .codecard code {
+    font-family: var(--font-mono); font-size: .87rem; line-height: 1.65; white-space: pre;
+  }
+  .c-kw { color: #E0A952; } .c-str { color: #7FCBB8; } .c-com { color: #6E7896; font-style: italic; }
+  .c-fn { color: #7BB3E0; }
+
+  /* callouts */
+  .callout {
+    display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    background: var(--surface); margin: 0 0 22px;
+  }
+  .callout .icon { flex: none; width: 20px; height: 20px; margin-top: 2px; }
+  .callout .body { min-width: 0; }
+  .callout .label { font-weight: 700; font-size: .82rem; letter-spacing: .02em; margin-bottom: 3px; display: block; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout.tip { border-left-color: var(--teal); background: var(--teal-soft); }
+  .callout.tip .label { color: var(--teal); }
+  .callout.tip .icon { color: var(--teal); }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .callout.warn .label { color: var(--warn); }
+  .callout.warn .icon { color: var(--warn); }
+  .callout.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+  .callout.danger .label { color: var(--danger); }
+  .callout.danger .icon { color: var(--danger); }
+  .callout.note { border-left-color: var(--accent); background: var(--accent-soft); }
+  .callout.note .label { color: var(--accent-strong); }
+  .callout.note .icon { color: var(--accent-strong); }
+
+  /* step list */
+  .steps { list-style: none; margin: 0 0 22px; padding: 0; counter-reset: step; }
+  .steps li {
+    counter-increment: step; position: relative; padding: 2px 0 2px 40px; margin-bottom: 16px;
+  }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -1px;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); color: var(--accent-strong); font-family: var(--font-mono);
+    font-size: .8rem; display: flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .steps li strong { display: block; margin-bottom: 2px; }
+
+  /* checklist */
+  .checklist { list-style: none; margin: 0 0 22px; padding: 0; }
+  .checklist li {
+    display: flex; gap: 12px; align-items: flex-start; padding: 9px 12px; border-radius: 8px;
+  }
+  .checklist li:hover { background: var(--surface); }
+  .checklist li::before {
+    content: ""; flex: none; width: 17px; height: 17px; margin-top: 2px; border-radius: 5px;
+    border: 1.5px solid var(--text-faint); background: var(--bg-elevated);
+  }
+
+  /* checklist done */
+  .checklist li.done::before {
+    background: var(--good); border-color: var(--good);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3 8l3.5 3.5L13 5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center;
+  }
+
+  /* compare grid */
+  .kv-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; margin: 0 0 22px; }
+  .kv-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .kv-card .k { font-family: var(--font-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint); margin-bottom: 4px; }
+  .kv-card .v { font-weight: 700; color: var(--text); }
+
+  hr.rule { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  footer.doc-footer {
+    max-width: 720px; margin: 60px auto 0; padding: 28px 0 60px; border-top: 1px solid var(--border);
+    color: var(--text-faint); font-size: .88rem; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+
+  .back-top {
+    position: fixed; right: 22px; bottom: 22px; z-index: 40;
+    width: 42px; height: 42px; border-radius: 50%; background: var(--bg-elevated);
+    border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    opacity: 0; pointer-events: none; transform: translateY(8px);
+  }
+  .back-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; }
+    .navtoggle { display: inline-flex; }
+    .toc {
+      position: fixed; inset: 49px 0 0 0; height: auto; z-index: 45;
+      background: var(--bg); transform: translateX(-100%); transition: transform .18s ease;
+      border-right: none; padding: 20px 20px 90px;
+    }
+    .toc.open { transform: translateX(0); }
+    main.content { padding: 0 18px 100px; }
+  }
+</style>
+
+<div id="progress"></div>
+
+<div class="topbar">
+  <button class="navtoggle" id="navtoggle" aria-expanded="false" aria-controls="toc">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    สารบัญ
+  </button>
+  <div class="topbar-title"><span class="mark">🔑</span> Always Encrypted <span style="color:var(--text-faint); font-weight:400;">— คู่มือองค์กร</span></div>
+  <span></span>
+</div>
+
+<div class="layout">
+  <nav class="toc" id="toc" aria-label="สารบัญ">
+    <div class="toc-part">ส่วนที่ 1 · หลักการพื้นฐาน</div>
+    <a href="#overview"><span class="toc-num">01</span>ภาพรวมและแนวคิด</a>
+    <a href="#architecture"><span class="toc-num">02</span>สถาปัตยกรรม</a>
+    <a href="#prerequisites"><span class="toc-num">03</span>ข้อกำหนดและการวางแผน</a>
+
+    <div class="toc-part">ส่วนที่ 2 · การติดตั้งใช้งาน</div>
+    <a href="#setup-ssms"><span class="toc-num">04</span>ติดตั้งผ่าน SSMS</a>
+    <a href="#setup-script"><span class="toc-num">05</span>ติดตั้งผ่าน T-SQL/PowerShell</a>
+    <a href="#app-dev"><span class="toc-num">06</span>พัฒนาแอปพลิเคชัน</a>
+
+    <div class="toc-part">ส่วนที่ 3 · การจัดการคีย์</div>
+    <a href="#key-mgmt"><span class="toc-num">07</span>บริหารจัดการคีย์</a>
+    <a href="#key-rotation"><span class="toc-num">08</span>การหมุนเวียนคีย์</a>
+    <a href="#enclaves"><span class="toc-num">09</span>Secure Enclaves</a>
+
+    <div class="toc-part">ส่วนที่ 4 · ปฏิบัติการ &amp; ดูแลรักษา</div>
+    <a href="#limitations"><span class="toc-num">10</span>ข้อจำกัด</a>
+    <a href="#performance"><span class="toc-num">11</span>ประสิทธิภาพ</a>
+    <a href="#troubleshooting"><span class="toc-num">12</span>แก้ไขปัญหา</a>
+    <a href="#best-practices"><span class="toc-num">13</span>แนวปฏิบัติองค์กร</a>
+
+    <div class="toc-part">ภาคผนวก</div>
+    <a href="#references"><span class="toc-num">14</span>เอกสารอ้างอิง</a>
+  </nav>
+
+  <main class="content">
+    <div class="masthead">
+      <div class="kicker">Enterprise Guide · SQL Server 2016+</div>
+      <h1 class="title">Always Encrypted<br /><em>คู่มือฉบับสมบูรณ์สำหรับ SQL Server</em></h1>
+      <p class="lede">
+        คู่มืออ่านแล้วลงมือทำตามได้จริง — ตั้งแต่แนวคิด CMK/CEK สถาปัตยกรรมการเข้ารหัสฝั่งไคลเอนต์
+        ไปจนถึงคำสั่ง T-SQL/PowerShell ตัวอย่างโค้ด และแนวปฏิบัติด้านการจัดการคีย์ระดับองค์กร
+      </p>
+      <div class="pillrow">
+        <span class="pill">SQL Server 2016+</span>
+        <span class="pill">Azure SQL Database</span>
+        <span class="pill">Secure Enclaves (2019+)</span>
+        <span class="pill">Azure Key Vault / HSM</span>
+      </div>
+    </div>
+
+    <!-- 01 OVERVIEW -->
+    <section id="overview">
+      <div class="part-label">ส่วนที่ 1 — หลักการพื้นฐาน</div>
+      <h2><span class="chnum">01</span>ภาพรวมและแนวคิดพื้นฐาน</h2>
+
+      <p><strong>Always Encrypted</strong> เป็นฟีเจอร์ของ SQL Server (2016+) และ Azure SQL Database ที่เข้ารหัสข้อมูลอ่อนไหว
+      <strong>ที่ฝั่งไคลเอนต์</strong> ก่อนส่งไปยังฐานข้อมูล คีย์เข้ารหัสไม่เคยถูกส่งหรือเก็บบนเซิร์ฟเวอร์ ทำให้แม้แต่ DBA
+      หรือผู้ที่เข้าถึงเซิร์ฟเวอร์โดยตรงก็เห็นได้เพียง ciphertext เท่านั้น</p>
+
+      <div class="callout note">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">แนวคิดหลัก</span>
+        การเข้ารหัส/ถอดรหัสเกิดขึ้นที่ <strong>driver ฝั่งไคลเอนต์</strong> เท่านั้น (ADO.NET / JDBC / ODBC) —
+        SQL Server engine ไม่มีทางเห็นข้อมูลต้นฉบับได้เลย นี่คือหัวใจของ separation of duties</div>
+      </div>
+
+      <h3>ปัญหาที่แก้ไข เทียบกับ TDE</h3>
+      <p>Transparent Data Encryption (TDE) เข้ารหัสเฉพาะไฟล์บนดิสก์ (at rest) แต่เมื่อข้อมูลถูกอ่านเข้าหน่วยความจำของเซิร์ฟเวอร์
+      จะกลายเป็น plaintext ทันที — ผู้มีสิทธิ์ sysadmin ยังเห็นข้อมูลจริงได้ Always Encrypted ปิดช่องว่างนี้โดยทำให้ข้อมูล
+      อยู่ในรูปเข้ารหัส <em>ตลอดวงจรชีวิต</em>: ดิสก์ หน่วยความจำฝั่งเซิร์ฟเวอร์ เครือข่าย และ backup — ควรใช้ <strong>ร่วมกับ</strong> TDE และ TLS ไม่ใช่แทนกัน</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>เทคนิค</th><th>เข้ารหัสที่ไหน</th><th>ป้องกัน DBA เห็นข้อมูล</th></tr></thead>
+          <tbody>
+            <tr><td>TDE</td><td>ไฟล์ฐานข้อมูล/log/backup</td><td>ไม่</td></tr>
+            <tr><td>Cell-level Encryption</td><td>คอลัมน์ (เขียนโค้ดเรียกฟังก์ชันเอง)</td><td>บางส่วน</td></tr>
+            <tr><td>Always Encrypted</td><td>คอลัมน์ ตั้งแต่ฝั่งไคลเอนต์</td><td>ใช่</td></tr>
+            <tr><td>+ Secure Enclaves</td><td>คอลัมน์ + คำนวณใน enclave ฝั่งเซิร์ฟเวอร์</td><td>ใช่ (ยกเว้นใน enclave)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>ศัพท์ที่ต้องรู้ก่อนเริ่ม</h3>
+      <div class="kv-grid">
+        <div class="kv-card"><div class="k">CMK</div><div class="v">Column Master Key — กุญแจแม่ เก็บนอก SQL Server</div></div>
+        <div class="kv-card"><div class="k">CEK</div><div class="v">Column Encryption Key — เข้ารหัสข้อมูลจริงในคอลัมน์</div></div>
+        <div class="kv-card"><div class="k">Deterministic</div><div class="v">ciphertext เดิมทุกครั้ง → ค้นหา/join ได้</div></div>
+        <div class="kv-card"><div class="k">Randomized</div><div class="v">ciphertext สุ่มทุกครั้ง → ปลอดภัยกว่า ค้นหาไม่ได้</div></div>
+      </div>
+
+      <h3>กรณีใช้งานทั่วไป</h3>
+      <ul>
+        <li>ระบบที่ต้องปฏิบัติตาม PCI-DSS (เลขบัตรเครดิต), HIPAA (ข้อมูลสุขภาพ), PDPA/GDPR (ข้อมูลส่วนบุคคล)</li>
+        <li>SaaS แบบ multi-tenant ที่ผู้ให้บริการ cloud ต้อง "เห็นข้อมูลน้อยที่สุด"</li>
+        <li>องค์กรที่ใช้ DBA ภายนอก (outsourced) แต่ไม่ต้องการให้เห็นข้อมูลลูกค้า</li>
+        <li>ย้ายฐานข้อมูลขึ้น Azure SQL แต่ต้องการควบคุมคีย์เข้ารหัสเอง (customer-managed keys)</li>
+      </ul>
+    </section>
+
+    <!-- 02 ARCHITECTURE -->
+    <section id="architecture">
+      <h2><span class="chnum">02</span>สถาปัตยกรรมและองค์ประกอบหลัก</h2>
+
+      <p>ลำดับการทำงานเมื่อแอปพลิเคชันรัน query:</p>
+      <ol class="steps">
+        <li><strong>ส่ง parameterized query</strong> — แอปส่ง query ผ่าน driver พร้อมพารามิเตอร์ (ไม่ใช่ dynamic SQL)</li>
+        <li><strong>Driver ตรวจ metadata</strong> — เรียก <code>sp_describe_parameter_encryption</code> เพื่อรู้ว่าพารามิเตอร์ใดตรงกับคอลัมน์เข้ารหัส</li>
+        <li><strong>เข้ารหัสที่ client</strong> — driver ดึง CMK จาก key store, ถอดรหัส CEK, ใช้ CEK เข้ารหัสค่าพารามิเตอร์เป็น ciphertext</li>
+        <li><strong>SQL Server ประมวลผล</strong> — รับ ciphertext และเปรียบเทียบแบบ equality โดยไม่รู้ค่า plaintext เลย</li>
+        <li><strong>ถอดรหัสผลลัพธ์</strong> — driver ถอดรหัสแถวผลลัพธ์ด้วย CEK ก่อนคืนค่าให้แอปพลิเคชันเป็น plaintext</li>
+      </ol>
+
+      <h3>Column Master Key (CMK)</h3>
+      <p>CMK คือกุญแจแม่ที่ปกป้อง CEK — <strong>ไม่ถูกเก็บใน SQL Server เลย</strong> เซิร์ฟเวอร์รู้เพียง metadata (ชื่อ/ตำแหน่ง/ประเภท key store)
+      การขโมยไฟล์ฐานข้อมูล (.mdf/.bak) เพียงอย่างเดียวจึง <strong>ไม่เพียงพอ</strong> ต่อการถอดรหัส</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Key Store</th><th>เหมาะกับ</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr><td>Windows Certificate Store</td><td>Dev/Test, องค์กรเล็ก</td><td>ต้อง export/import .pfx ทุกเครื่อง</td></tr>
+            <tr><td>Azure Key Vault</td><td>Production, Azure SQL, Hybrid</td><td>RBAC, audit log, rotation, HSM-backed</td></tr>
+            <tr><td>Hardware Security Module</td><td>FIPS 140-2/3 compliance</td><td>ต้องมี HSM on-premises + CNG provider</td></tr>
+            <tr><td>Windows CSP/CNG</td><td>Custom PKI, smart card</td><td>ผูกกับ enterprise CA</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Column Encryption Key (CEK)</h3>
+      <p>CEK เข้ารหัสข้อมูลจริงในคอลัมน์ SQL Server เก็บเฉพาะ <strong>CEK ที่ถูกเข้ารหัสด้วย CMK แล้ว</strong> ใน
+      <code>sys.column_encryption_keys</code> หนึ่ง CEK สามารถถูกเข้ารหัสด้วยได้หลาย CMK (รองรับ key rotation)
+      และหลายคอลัมน์สามารถใช้ CEK ร่วมกัน หรือแยกตามความอ่อนไหวของข้อมูล</p>
+
+      <h3>Deterministic vs Randomized</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>คุณสมบัติ</th><th>Deterministic</th><th>Randomized</th></tr></thead>
+          <tbody>
+            <tr><td>ciphertext ต่อค่าเดิม</td><td>เหมือนเดิมทุกครั้ง</td><td>สุ่มทุกครั้ง</td></tr>
+            <tr><td><code>WHERE</code> / <code>JOIN</code></td><td>ได้</td><td>ไม่ได้</td></tr>
+            <tr><td>Unique index / PK</td><td>ได้</td><td>ไม่ได้</td></tr>
+            <tr><td><code>GROUP BY</code> / <code>DISTINCT</code></td><td>ได้</td><td>ไม่ได้</td></tr>
+            <tr><td><code>LIKE</code>, <code>&gt;</code>, <code>ORDER BY</code></td><td>ไม่ได้ (เว้นแต่ enclave)</td><td>ไม่ได้ (เว้นแต่ enclave)</td></tr>
+            <tr><td>ความปลอดภัย</td><td>ต่ำกว่า (เสี่ยง pattern analysis)</td><td>สูงกว่า</td></tr>
+            <tr><td>แนะนำใช้กับ</td><td>เลขบัตรประชาชน, email (ใช้ค้นหา)</td><td>เลขบัตรเครดิตเต็ม, บันทึกอ่อนไหว</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2Z"/></svg>
+        <div class="body"><span class="label">ถ้าต้องการทั้งสองอย่าง</span>
+        การค้นหาแบบ range/pattern <em>และ</em> ความปลอดภัยสูงพร้อมกัน ให้พิจารณา
+        <a href="#enclaves">Secure Enclaves (บทที่ 9)</a> ซึ่งรองรับ <code>LIKE</code>/range query บน randomized encryption ได้</div>
+      </div>
+
+      <h3>Metadata ที่ใช้ตรวจสอบบ่อย</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>SELECT
+    t.name AS table_name,
+    c.name AS column_name,
+    c.encryption_type_desc,
+    c.encryption_algorithm_name,
+    cek.name AS cek_name
+FROM sys.columns c
+JOIN sys.tables t ON c.object_id = t.object_id
+JOIN sys.column_encryption_keys cek
+    ON c.column_encryption_key_id = cek.column_encryption_key_id
+WHERE c.encryption_type IS NOT NULL;</code></pre>
+      </div>
+
+      <p>อัลกอริทึมที่ใช้คือ <code>AEAD_AES_256_CBC_HMAC_SHA256</code> — Authenticated Encryption ที่ให้ทั้งความลับ (confidentiality)
+      และตรวจสอบความถูกต้อง (integrity) ป้องกันการปลอมแปลง ciphertext โดยไม่ถูกตรวจจับ</p>
+    </section>
+
+    <!-- 03 PREREQUISITES -->
+    <section id="prerequisites">
+      <h2><span class="chnum">03</span>ข้อกำหนดเบื้องต้นและการวางแผน</h2>
+
+      <h3>เวอร์ชันที่รองรับ</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ผลิตภัณฑ์</th><th>เวอร์ชันขั้นต่ำ</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr><td>SQL Server (on-prem)</td><td>2016 (13.x)+</td><td>ทุก edition รองรับพื้นฐาน</td></tr>
+            <tr><td>SQL Server + Secure Enclave</td><td>2019 (15.x)+</td><td>ต้อง Enterprise/Developer + VBS/SGX</td></tr>
+            <tr><td>SSMS</td><td>17.0+ (แนะนำล่าสุด)</td><td>ใช้ wizard ตั้งค่า</td></tr>
+            <tr><td>.NET</td><td>.NET Core 2.1+ / .NET 6+</td><td>ใช้ <code>Microsoft.Data.SqlClient</code></td></tr>
+            <tr><td>JDBC Driver</td><td>6.0+</td><td>ต้องใช้ JRE 8+</td></tr>
+            <tr><td>ODBC Driver</td><td>17+</td><td>รองรับผ่าน connection attribute</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Checklist ก่อนเริ่มติดตั้ง</h3>
+      <ul class="checklist">
+        <li class="done">ทำ Data Classification ระบุคอลัมน์อ่อนไหว (PII, การเงิน, สุขภาพ, credential)</li>
+        <li>ตัดสินใจ Deterministic/Randomized ต่อคอลัมน์ — ดูว่าคอลัมน์ถูกใช้ใน <code>WHERE</code>/<code>JOIN</code>/index หรือไม่</li>
+        <li>ตัดสินใจว่าต้องใช้ Secure Enclave หรือไม่ (range query, in-place rotation)</li>
+        <li>ออกแบบกลยุทธ์ key store (Certificate Store / Azure Key Vault / HSM)</li>
+        <li>ประเมินผลกระทบต่อแอปพลิเคชัน — driver, dynamic SQL, ORM, reporting tools</li>
+        <li>ยืนยันสิทธิ์ที่จำเป็น: <code>ALTER ANY COLUMN MASTER KEY</code>, <code>ALTER ANY COLUMN ENCRYPTION KEY</code></li>
+      </ul>
+
+      <div class="callout warn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 2 20h20L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="body"><span class="label">ข้อจำกัดชนิดข้อมูล</span>
+        ไม่รองรับ <code>xml</code>, <code>text</code>, <code>ntext</code>, <code>image</code>, <code>rowversion</code>,
+        <code>sql_variant</code>, <code>geography</code>, <code>geometry</code> คอลัมน์ deterministic ต้องมี collation ลงท้าย
+        <code>_BIN2</code> เช่น <code>Latin1_General_BIN2</code></div>
+      </div>
+
+      <h3>สภาพแวดล้อมทดสอบที่แนะนำ</h3>
+      <p>Dev → Staging (ขนาดข้อมูลใกล้เคียง production เพื่อวัดเวลา encryption/rotation จริง) → มีแผน rollback + backup เสมอ
+      ก่อนดำเนินการใน production เพราะการเข้ารหัสคอลัมน์เป็น operation ที่ใช้เวลาและ lock ตาราง</p>
+    </section>
+
+    <!-- 04 SETUP SSMS -->
+    <section id="setup-ssms">
+      <div class="part-label">ส่วนที่ 2 — การติดตั้งใช้งาน</div>
+      <h2><span class="chnum">04</span>การติดตั้งผ่าน SSMS (Wizard)</h2>
+      <p>เหมาะสำหรับการติดตั้งครั้งแรก ทดสอบ หรือฐานข้อมูลขนาดเล็ก-กลาง คลิกขวาที่ฐานข้อมูลใน Object Explorer →
+      <strong>Tasks → Encrypt Columns...</strong></p>
+
+      <ol class="steps">
+        <li><strong>Column Selection</strong> — เลือกตาราง/คอลัมน์ที่จะเข้ารหัส และเลือก Encryption Type (Deterministic/Randomized)
+        ต่อคอลัมน์ ถ้าเป็น primary key/unique/index ต้องเป็น Deterministic เท่านั้น</li>
+        <li><strong>Master Key Configuration</strong> — สร้าง CMK ใหม่หรือเลือกที่มีอยู่ เลือก Key Store: Certificate Store,
+        Azure Key Vault (sign-in ด้วยบัญชีที่มีสิทธิ์ Key Vault Crypto Officer), หรือ HSM</li>
+        <li><strong>Run Settings</strong> — เลือก "Proceed to finish now" (dev/test) หรือ
+        <strong>"Generate PowerShell script to run later"</strong> (แนะนำสำหรับ production)</li>
+        <li><strong>Summary &amp; Run</strong> — ตรวจสอบสรุปการตั้งค่าทั้งหมดแล้วกด Finish</li>
+      </ol>
+
+      <div class="callout note">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">สำหรับ Production</span>
+        เลือก "Generate PowerShell script" เสมอ เพื่อ review ก่อนรัน, รันนอกเวลาทำการ, และควบคุม transaction/locking ได้ดีกว่า</div>
+      </div>
+
+      <h3>ตรวจสอบผลลัพธ์หลังเข้ารหัส</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>SELECT t.name AS table_name, c.name AS column_name,
+       c.encryption_type_desc, c.encryption_algorithm_name
+FROM sys.columns c
+JOIN sys.tables t ON c.object_id = t.object_id
+WHERE c.encryption_type IS NOT NULL
+ORDER BY t.name, c.name;</code></pre>
+      </div>
+
+      <p>จากนั้นต้องอัปเดต <strong>connection string</strong> ของทุกแอปพลิเคชันให้เปิด <code>Column Encryption Setting=Enabled</code>
+      (ดูบทที่ 6) มิฉะนั้นแอปจะเห็นเพียง ciphertext แบบ binary</p>
+
+      <div class="callout danger">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">ข้อควรระวังกับตารางขนาดใหญ่</span>
+        การเข้ารหัสข้อมูลที่มีอยู่แล้วคือ operation ที่อ่าน-เขียนทุกแถวใหม่ ใช้เวลานาน มี table lock — ควรทำนอกเวลาทำการและ
+        backup ก่อนเสมอ สำหรับตารางใหญ่มากใช้ <strong>Online Encryption</strong> ผ่าน PowerShell แทน (บทที่ 5.2.3)</div>
+      </div>
+    </section>
+
+    <!-- 05 SETUP SCRIPT -->
+    <section id="setup-script">
+      <h2><span class="chnum">05</span>การติดตั้งผ่าน T-SQL และ PowerShell</h2>
+      <p>เหมาะสำหรับ Production, automation และ CI/CD เพราะ script, review, version control ได้</p>
+
+      <div class="callout warn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 2 20h20L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="body"><span class="label">ข้อจำกัดสำคัญ</span>
+        T-SQL ล้วนสร้างได้แค่ <em>metadata</em> เท่านั้น — <strong>ไม่สามารถเข้ารหัสข้อมูลที่มีอยู่แล้วในตารางได้</strong>
+        เพราะ SQL Server ไม่มีสิทธิ์เข้าถึง CMK การเข้ารหัสข้อมูลจริงต้องผ่าน PowerShell module <code>SqlServer</code></div>
+      </div>
+
+      <h3>5.1 T-SQL — สำหรับตารางใหม่ที่ยังไม่มีข้อมูล</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>-- สร้าง Column Master Key (Azure Key Vault)
+CREATE COLUMN MASTER KEY [CMK_AKV]
+WITH (
+    KEY_STORE_PROVIDER_NAME = N'AZURE_KEY_VAULT',
+    KEY_PATH = N'https://mycompany-kv.vault.azure.net/keys/CMK-Prod/8f8f...'
+);
+
+-- สร้าง Column Encryption Key (ENCRYPTED_VALUE มาจาก PowerShell)
+CREATE COLUMN ENCRYPTION KEY [CEK_Auto1]
+WITH VALUES (
+    COLUMN_MASTER_KEY = [CMK_AKV],
+    ALGORITHM = 'RSA_OAEP',
+    ENCRYPTED_VALUE = 0x016E000001630075...
+);
+
+-- สร้างตารางพร้อมคอลัมน์เข้ารหัส
+CREATE TABLE dbo.Customer (
+    CustomerId   INT IDENTITY PRIMARY KEY,
+    NationalId   CHAR(13) COLLATE Latin1_General_BIN2
+        ENCRYPTED WITH (
+            COLUMN_ENCRYPTION_KEY = [CEK_Auto1],
+            ENCRYPTION_TYPE = DETERMINISTIC,
+            ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA256'
+        ) NOT NULL,
+    CreditCardNumber VARCHAR(19) COLLATE Latin1_General_BIN2
+        ENCRYPTED WITH (
+            COLUMN_ENCRYPTION_KEY = [CEK_Auto1],
+            ENCRYPTION_TYPE = RANDOMIZED,
+            ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA256'
+        ) NULL,
+    FullName NVARCHAR(100) NOT NULL  -- ไม่เข้ารหัส
+);</code></pre>
+      </div>
+
+      <h3>5.2 PowerShell — สำหรับตารางที่มีข้อมูลอยู่แล้ว (แนะนำสำหรับ Production)</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">PowerShell</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>Install-Module -Name SqlServer -Scope CurrentUser -AllowClobber
+Import-Module SqlServer
+
+$connStr = "Server=myserver;Database=MyProdDb;Integrated Security=True;"
+$database = Get-SqlDatabase -ConnectionString $connStr
+
+# สร้าง CMK ผ่าน Azure Key Vault
+$akvKey = New-SqlAzureKeyVaultColumnMasterKeySettings `
+    -KeyURL "https://mycompany-kv.vault.azure.net/keys/CMK-Prod/8f8f..."
+New-SqlColumnMasterKey -Name "CMK_Prod" -InputObject $database `
+    -ColumnMasterKeySettings $akvKey
+
+# สร้าง CEK
+New-SqlColumnEncryptionKey -Name "CEK_Prod" -InputObject $database `
+    -ColumnMasterKey "CMK_Prod"
+
+# กำหนดการเข้ารหัสต่อคอลัมน์
+$cesc1 = New-SqlColumnEncryptionSettings `
+    -ColumnName "dbo.Customer.NationalId" `
+    -EncryptionType "Deterministic" -EncryptionKey "CEK_Prod"
+$cesc2 = New-SqlColumnEncryptionSettings `
+    -ColumnName "dbo.Customer.CreditCardNumber" `
+    -EncryptionType "Randomized" -EncryptionKey "CEK_Prod"
+
+# รัน Online Encryption (ลด downtime บนตารางที่มีข้อมูลอยู่แล้ว)
+Set-SqlColumnEncryption -ColumnEncryptionSettings $cesc1, $cesc2 `
+    -InputObject $database -OnlineEncryption</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2Z"/></svg>
+        <div class="body"><span class="label">CI/CD</span>
+        แยก pipeline step "provision key metadata" ออกจาก "encrypt data" เสมอ อย่าเก็บ <code>ENCRYPTED_VALUE</code> หรือ
+        credential ของ Key Vault ไว้ใน source control — ใช้ pipeline secret variable หรือ managed identity แทน</div>
+      </div>
+    </section>
+
+    <!-- 06 APP DEV -->
+    <section id="app-dev">
+      <h2><span class="chnum">06</span>การพัฒนาแอปพลิเคชันให้รองรับ</h2>
+      <p>หลักการสำคัญ: <strong>ต้องใช้ parameterized query เท่านั้น</strong> — dynamic SQL ที่ต่อ string ตรง ๆ ใช้งานไม่ได้กับ
+      คอลัมน์เข้ารหัส และต้องระบุชนิด/ขนาดพารามิเตอร์ให้ตรงกับคอลัมน์เป๊ะ</p>
+
+      <h3>.NET (Microsoft.Data.SqlClient)</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>var connString =
+    "Server=myserver;Database=MyProdDb;" +
+    "Column Encryption Setting=Enabled;Integrated Security=True;";
+
+using var connection = new SqlConnection(connString);
+connection.Open();
+
+using var command = new SqlCommand(
+    "SELECT CustomerId, FullName FROM dbo.Customer WHERE NationalId = @NationalId",
+    connection);
+
+// ชนิด/ขนาดต้องตรงกับคอลัมน์เป๊ะ
+command.Parameters.Add("@NationalId", System.Data.SqlDbType.Char, 13).Value = "1234567890123";
+
+using var reader = command.ExecuteReader();
+while (reader.Read())
+    Console.WriteLine($"{reader["CustomerId"]}: {reader["FullName"]}");</code></pre>
+      </div>
+
+      <h3>JDBC (Java)</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">Java</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>String url = "jdbc:sqlserver://myserver;database=MyProdDb;columnEncryptionSetting=Enabled;";
+try (Connection conn = DriverManager.getConnection(url, "user", "password");
+     PreparedStatement pstmt = conn.prepareStatement(
+         "SELECT CustomerId, FullName FROM dbo.Customer WHERE NationalId = ?")) {
+    pstmt.setString(1, "1234567890123");
+    try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next())
+            System.out.println(rs.getInt("CustomerId") + ": " + rs.getString("FullName"));
+    }
+}</code></pre>
+      </div>
+
+      <h3>Python (pyodbc)</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">Python</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>import pyodbc
+
+conn_str = (
+    "Driver={ODBC Driver 17 for SQL Server};"
+    "Server=myserver;Database=MyProdDb;"
+    "ColumnEncryption=Enabled;Trusted_Connection=yes;"
+)
+conn = pyodbc.connect(conn_str)
+cursor = conn.cursor()
+cursor.execute(
+    "SELECT CustomerId, FullName FROM dbo.Customer WHERE NationalId = ?",
+    ("1234567890123",)
+)
+for row in cursor.fetchall():
+    print(row.CustomerId, row.FullName)</code></pre>
+      </div>
+
+      <h3>ข้อผิดพลาดที่พบบ่อยและวิธีแก้</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Error</th><th>สาเหตุ</th><th>วิธีแก้</th></tr></thead>
+          <tbody>
+            <tr><td>Operand type clash</td><td>ชนิด/ขนาดพารามิเตอร์ไม่ตรงกับคอลัมน์</td><td>ตรวจ data type mapping</td></tr>
+            <tr><td>Encryption scheme mismatch</td><td>ใช้ range/LIKE บนคอลัมน์ที่ไม่มี enclave</td><td>ปรับ query หรือใช้ Secure Enclave</td></tr>
+            <tr><td>Failed to decrypt CEK</td><td>ไม่มีสิทธิ์เข้าถึง CMK จาก client นั้น</td><td>ตรวจ certificate/Key Vault access policy</td></tr>
+            <tr><td>ได้ binary garbage แทนค่าจริง</td><td>ลืมเปิด Column Encryption Setting</td><td>แก้ connection string</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>ORM ทั่วไปใช้งานได้ตามปกติ (Entity Framework Core, Dapper, Hibernate) ตราบใดที่ query ที่ generate ออกมาเป็น
+      parameterized/PreparedStatement — ระวัง ORM บางตัวที่ inline literal แทน parameter ในบางกรณี (เช่น batch insert บางรูปแบบ)</p>
+
+      <hr class="rule" />
+
+      <h3>JOIN บนคอลัมน์เข้ารหัส</h3>
+      <p>SQL Server เปรียบเทียบ ciphertext ของสองคอลัมน์กันได้ตรง ๆ ที่ฝั่งเซิร์ฟเวอร์ (ไม่ต้องส่ง plaintext ผ่าน driver เลย)
+      <strong>ก็ต่อเมื่อ</strong> ทั้งสองคอลัมน์เข้ากันได้ครบทุกข้อ:</p>
+      <ul>
+        <li>ทั้งคู่เป็น <strong>Deterministic</strong> (Randomized join กันไม่ได้แม้แต่กับตัวเอง)</li>
+        <li>ใช้ <strong>CEK เดียวกัน</strong></li>
+        <li>ใช้ <strong>algorithm เดียวกัน</strong> (<code>AEAD_AES_256_CBC_HMAC_SHA256</code>)</li>
+        <li>ชนิดข้อมูล/collation ตรงกัน (<code>_BIN2</code>)</li>
+      </ul>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL — Schema</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>CREATE TABLE dbo.Customer (
+    CustomerId INT IDENTITY PRIMARY KEY,               -- ไม่เข้ารหัส
+    NationalId CHAR(13) COLLATE Latin1_General_BIN2
+        ENCRYPTED WITH (
+            COLUMN_ENCRYPTION_KEY = [CEK_Prod],
+            ENCRYPTION_TYPE = DETERMINISTIC,
+            ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA256'
+        ) NOT NULL,
+    FullName NVARCHAR(100) NOT NULL
+);
+
+CREATE TABLE dbo.Orders (
+    OrderId INT IDENTITY PRIMARY KEY,
+    CustomerNationalId CHAR(13) COLLATE Latin1_General_BIN2
+        ENCRYPTED WITH (
+            COLUMN_ENCRYPTION_KEY = [CEK_Prod],         -- ต้องเป็น CEK เดียวกับ Customer.NationalId
+            ENCRYPTION_TYPE = DETERMINISTIC,
+            ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA256'
+        ) NOT NULL,
+    OrderDate DATETIME2 NOT NULL
+);</code></pre>
+      </div>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>using var command = new SqlCommand(@"
+    SELECT o.OrderId, o.OrderDate, c.FullName
+    FROM dbo.Orders o
+    JOIN dbo.Customer c ON o.CustomerNationalId = c.NationalId
+    WHERE o.OrderDate >= @StartDate", connection);
+
+command.Parameters.Add("@StartDate", System.Data.SqlDbType.DateTime2).Value = DateTime.Today.AddDays(-30);
+
+using var reader = command.ExecuteReader();
+while (reader.Read())
+    Console.WriteLine($"{reader["OrderId"]}: {reader["FullName"]} on {reader["OrderDate"]}");</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">ถ้า CEK ไม่ตรงกัน</span>
+        จะได้ <code>Msg 33299: Encryption scheme mismatch for columns/variables ...</code> — วิธีแก้คือวางแผนให้คอลัมน์ที่ต้อง
+        join กันใช้ CEK เดียวกันตั้งแต่ตอนออกแบบ schema (บทที่ 3) หรือทำ <a href="#key-rotation">CEK rotation</a> เพื่อรวมให้ใช้ CEK เดียวกัน</div>
+      </div>
+
+      <h3>INSERT บนคอลัมน์เข้ารหัส</h3>
+      <p>ทำงานเหมือนคอลัมน์ปกติทุกประการ ตราบใดที่ค่าที่ส่งเข้าคอลัมน์เข้ารหัสมาจาก <strong>parameter</strong> เท่านั้น</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>using var command = new SqlCommand(@"
+    INSERT INTO dbo.Customer (NationalId, CreditCardNumber, FullName)
+    VALUES (@NationalId, @CreditCardNumber, @FullName)", connection);
+
+command.Parameters.Add("@NationalId", System.Data.SqlDbType.Char, 13).Value = "1234567890123";
+command.Parameters.Add("@CreditCardNumber", System.Data.SqlDbType.VarChar, 19).Value = "4111111111111111";
+command.Parameters.Add("@FullName", System.Data.SqlDbType.NVarChar, 100).Value = "สมชาย ใจดี"; // ไม่เข้ารหัส
+
+command.ExecuteNonQuery();</code></pre>
+      </div>
+
+      <p>ผ่าน Stored Procedure (แนะนำสำหรับ Production เพราะ centralize logic และ audit ง่ายกว่า):</p>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>CREATE PROCEDURE dbo.usp_InsertCustomer
+    @NationalId       CHAR(13),
+    @CreditCardNumber VARCHAR(19),
+    @FullName         NVARCHAR(100)
+AS
+BEGIN
+    INSERT INTO dbo.Customer (NationalId, CreditCardNumber, FullName)
+    VALUES (@NationalId, @CreditCardNumber, @FullName);
+END</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 2 20h20L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="body"><span class="label">ทดสอบผ่าน SSMS — literal ใช้ไม่ได้</span>
+        แม้เปิด "Always Encrypted" ใน connection properties ของ SSMS แล้ว การใส่ literal ตรง ๆ ก็ยัง error เพราะ literal
+        ไม่ถูกส่งเป็น parameter ต้องประกาศเป็นตัวแปรก่อนเสมอ:</div>
+      </div>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>-- ผิด: literal ตรง ๆ ไม่ถูกเข้ารหัสให้
+INSERT INTO dbo.Customer (NationalId, FullName) VALUES ('1234567890123', N'ทดสอบ');
+-- Msg 206: Operand type clash: varchar is incompatible with the encrypted column ...
+
+-- ถูก: ประกาศตัวแปรก่อน — SSMS จะ parameterize ให้อัตโนมัติเมื่อเปิด Always Encrypted
+DECLARE @NationalId CHAR(13) = '1234567890123';
+INSERT INTO dbo.Customer (NationalId, FullName) VALUES (@NationalId, N'ทดสอบ');</code></pre>
+      </div>
+
+      <p style="margin-top:-6px">
+        <code>SqlBulkCopy</code> รองรับ Always Encrypted ได้เมื่อเปิด <code>Column Encryption Setting=Enabled</code> ทั้ง source/destination
+        (ห้ามตั้ง <code>AllowEncryptedValueModifications</code>) ส่วน Table-Valued Parameters (TVP) มีข้อจำกัดในหลาย driver เวอร์ชัน —
+        ทดสอบเจาะจงหรือใช้ loop insert ทีละแถวแทนหากพบปัญหา
+      </p>
+
+      <h3>UPDATE บนคอลัมน์เข้ารหัส</h3>
+
+      <h4>กรณีที่ 1 — filter ด้วยคอลัมน์ที่ไม่เข้ารหัส (แนะนำที่สุด)</h4>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>using var command = new SqlCommand(@"
+    UPDATE dbo.Customer
+    SET CreditCardNumber = @NewCreditCardNumber
+    WHERE CustomerId = @CustomerId", connection);   // CustomerId เป็น PK ไม่เข้ารหัส
+
+command.Parameters.Add("@NewCreditCardNumber", System.Data.SqlDbType.VarChar, 19).Value = "4222222222222";
+command.Parameters.Add("@CustomerId", System.Data.SqlDbType.Int).Value = 42;
+
+command.ExecuteNonQuery();</code></pre>
+      </div>
+
+      <h4>กรณีที่ 2 — filter ด้วยคอลัมน์เข้ารหัสแบบ Deterministic</h4>
+      <p>รองรับ equality ใน <code>WHERE</code> ได้ตามปกติ driver จะเข้ารหัสค่าพารามิเตอร์ทั้งค่าที่กรองและค่าที่ set ให้อัตโนมัติ:</p>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>using var command = new SqlCommand(@"
+    UPDATE dbo.Customer SET FullName = @NewFullName
+    WHERE NationalId = @NationalId", connection);
+
+command.Parameters.Add("@NewFullName", System.Data.SqlDbType.NVarChar, 100).Value = "สมหญิง ใจดี";
+command.Parameters.Add("@NationalId", System.Data.SqlDbType.Char, 13).Value = "1234567890123";
+
+command.ExecuteNonQuery();</code></pre>
+      </div>
+
+      <h4>กรณีที่ 3 — ห้าม filter ด้วยคอลัมน์ Randomized</h4>
+      <p><code>WHERE CreditCardNumber = @CreditCardNumber</code> จะ error ทันทีถ้าเป็น Randomized (ไม่รองรับ equality)
+      ต้องหา primary key จากคอลัมน์อื่นก่อน แล้วค่อย update ด้วย PK นั้น:</p>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>// ขั้นที่ 1: หา CustomerId จากคอลัมน์ deterministic หรือคอลัมน์ที่ไม่เข้ารหัส
+int customerId;
+using (var lookup = new SqlCommand(
+    "SELECT CustomerId FROM dbo.Customer WHERE NationalId = @NationalId", connection))
+{
+    lookup.Parameters.Add("@NationalId", System.Data.SqlDbType.Char, 13).Value = "1234567890123";
+    customerId = (int)lookup.ExecuteScalar();
+}
+
+// ขั้นที่ 2: update ด้วย PK แทน
+using var update = new SqlCommand(
+    "UPDATE dbo.Customer SET CreditCardNumber = @NewCard WHERE CustomerId = @CustomerId", connection);
+update.Parameters.Add("@NewCard", System.Data.SqlDbType.VarChar, 19).Value = "4222222222222";
+update.Parameters.Add("@CustomerId", System.Data.SqlDbType.Int).Value = customerId;
+update.ExecuteNonQuery();</code></pre>
+      </div>
+
+      <h4>MERGE / UPSERT</h4>
+      <p>เงื่อนไข <code>ON</code> ที่เทียบคอลัมน์เข้ารหัสต้องเคารพกฎเดียวกับ JOIN ด้านบน (deterministic + CEK/algorithm ตรงกัน)
+      ส่วน <code>UPDATE SET</code> / <code>INSERT</code> ทำงานได้ปกติถ้าค่าที่ใส่มาจาก parameter หรือคอลัมน์ ciphertext ที่เข้ากันได้:</p>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>MERGE dbo.Customer AS target
+USING (VALUES (@NationalId, @FullName)) AS source (NationalId, FullName)
+    ON target.NationalId = source.NationalId   -- deterministic + CEK เดียวกันทั้งคู่
+WHEN MATCHED THEN
+    UPDATE SET FullName = source.FullName
+WHEN NOT MATCHED THEN
+    INSERT (NationalId, FullName) VALUES (source.NationalId, source.FullName);</code></pre>
+      </div>
+    </section>
+
+    <!-- 07 KEY MGMT -->
+    <section id="key-mgmt">
+      <div class="part-label">ส่วนที่ 3 — การจัดการคีย์</div>
+      <h2><span class="chnum">07</span>การบริหารจัดการคีย์</h2>
+      <p>การจัดการคีย์คือหัวใจของความปลอดภัย หากคีย์หายข้อมูลกู้คืนไม่ได้เลย หากคีย์รั่วไหลข้อมูลทั้งหมดไม่ปลอดภัยอีกต่อไป</p>
+
+      <h3>หลักการออกแบบ</h3>
+      <ul>
+        <li><strong>แยกหน้าที่ (Separation of Duties)</strong> — ผู้ดูแล key store ควรคนละกลุ่มกับ DBA</li>
+        <li><strong>Least Privilege</strong> — จำกัดสิทธิ์ unwrap/decrypt ให้เฉพาะ service account ที่จำเป็นจริง</li>
+        <li><strong>High Availability</strong> — key store ต้องมี availability สูงเท่าฐานข้อมูล</li>
+        <li><strong>Disaster Recovery</strong> — สำรอง (escrow) คีย์ไว้ในที่ปลอดภัยแยกต่างหาก</li>
+        <li><strong>Audit Trail</strong> — บันทึกทุกการ unwrap/decrypt คีย์</li>
+      </ul>
+
+      <h3>สิทธิ์บน Azure Key Vault ที่แนะนำ</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>บทบาท</th><th>สิทธิ์ที่ควรได้รับ</th></tr></thead>
+          <tbody>
+            <tr><td>Security/PKI Team</td><td>Key Vault Administrator / Crypto Officer</td></tr>
+            <tr><td>Service Account (runtime)</td><td>Key Vault Crypto User (get, unwrapKey, wrapKey เท่านั้น)</td></tr>
+            <tr><td>DBA</td><td>ไม่ควรมีสิทธิ์เข้าถึง Key Vault เลย</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">Bash / Azure CLI</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>az keyvault set-policy \
+  --name mycompany-kv \
+  --object-id &lt;service-principal-object-id&gt; \
+  --key-permissions get unwrapKey wrapKey</code></pre>
+      </div>
+
+      <h3>Managed Identity แทนการฝัง secret</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>var credential = new DefaultAzureCredential();
+var akvProvider = new SqlColumnEncryptionAzureKeyVaultProvider(credential);
+SqlConnection.RegisterColumnEncryptionKeyStoreProviders(
+    new Dictionary&lt;string, SqlColumnEncryptionKeyStoreProvider&gt; {
+        { SqlColumnEncryptionAzureKeyVaultProvider.ProviderName, akvProvider }
+    });</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">Backup &amp; Escrow</span>
+        เปิด <strong>Soft-Delete</strong> และ <strong>Purge Protection</strong> เสมอบน Key Vault ที่เก็บ Production CMK
+        และทดสอบกระบวนการกู้คืน (restore drill) เป็นระยะ — backup ที่ไม่เคยทดสอบกู้คืนถือว่าไม่มี backup จริง</div>
+      </div>
+    </section>
+
+    <!-- 08 ROTATION -->
+    <section id="key-rotation">
+      <h2><span class="chnum">08</span>การหมุนเวียนคีย์ (Key Rotation)</h2>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ระดับ</th><th>คืออะไร</th><th>ความถี่</th><th>Downtime</th></tr></thead>
+          <tbody>
+            <tr><td>CMK Rotation</td><td>เปลี่ยนกุญแจปกป้อง CEK (ไม่กระทบข้อมูล)</td><td>ทุก 6–12 เดือน</td><td>แทบไม่มี</td></tr>
+            <tr><td>CEK Rotation</td><td>เปลี่ยนกุญแจเข้ารหัสข้อมูลจริง</td><td>ทุก 1–2 ปี / สงสัยรั่วไหล</td><td>มี (เว้นแต่ enclave)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>ขั้นตอนหมุนเวียน CMK</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">PowerShell</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>$database = Get-SqlDatabase -ConnectionString $connStr
+
+# 1) สร้าง CMK ใหม่
+$newAkvKey = New-SqlAzureKeyVaultColumnMasterKeySettings `
+    -KeyURL "https://mycompany-kv.vault.azure.net/keys/CMK-Prod-2026/&lt;version&gt;"
+New-SqlColumnMasterKey -Name "CMK_Prod_2026" -InputObject $database `
+    -ColumnMasterKeySettings $newAkvKey
+
+# 2) เข้ารหัส CEK เดิมด้วย CMK ใหม่ (ตอนนี้ถูกเข้ารหัสด้วยทั้งเก่า+ใหม่ = grace period)
+Add-SqlColumnEncryptionKeyValue -InputObject $database `
+    -ColumnEncryptionKeyName "CEK_Prod" -ColumnMasterKeyName "CMK_Prod_2026"
+
+# 3) หลังยืนยันทุกแอปย้ายไปใช้ CMK ใหม่แล้ว — ลบของเก่า
+Remove-SqlColumnEncryptionKeyValue -InputObject $database `
+    -ColumnEncryptionKeyName "CEK_Prod" -ColumnMasterKeyName "CMK_Prod"
+Remove-SqlColumnMasterKey -Name "CMK_Prod" -InputObject $database</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 2 20h20L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="body"><span class="label">อย่าลบคีย์เก่าทันที</span>
+        เว้นช่วง "grace period" ที่ CEK ถูกเข้ารหัสด้วยทั้งคีย์เก่าและใหม่พร้อมกัน จนกว่าจะมั่นใจว่าทุก client/environment
+        ย้ายไปใช้คีย์ใหม่แล้วจริง (ตรวจสอบผ่าน audit log ของ Key Vault)</div>
+      </div>
+
+      <h3>หมุนเวียน CEK — In-place ด้วย Secure Enclave</h3>
+      <p>หากเปิดใช้ Secure Enclave ไว้ สามารถทำ in-place rotation ได้โดยข้อมูลถูกถอดรหัส-เข้ารหัสใหม่
+      <strong>ภายใน enclave บนเซิร์ฟเวอร์เอง</strong> ไม่ต้องส่งข้อมูลออกไปที่ client เลย เร็วกว่ามาก:</p>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">PowerShell</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>Set-SqlColumnEncryption -ColumnEncryptionSettings $cesc `
+    -InputObject $database `
+    -RolloverColumnEncryptionKey `
+    -TargetEnclaveType "VBS"</code></pre>
+      </div>
+
+      <h3>Rotation Runbook สำหรับองค์กร</h3>
+      <ol class="steps">
+        <li><strong>แจ้งล่วงหน้า</strong> 2–4 สัปดาห์ก่อนหมุนเวียน CEK เพราะกระทบ downtime</li>
+        <li><strong>ทดสอบใน Staging</strong> ที่ขนาดข้อมูลใกล้เคียง production เพื่อวัดเวลาจริง</li>
+        <li><strong>Backup</strong> ฐานข้อมูลและคีย์เก่าก่อนเริ่ม</li>
+        <li><strong>CMK ก่อน CEK เสมอ</strong> — ให้ระบบใช้ CMK ใหม่มั่นคงก่อน</li>
+        <li><strong>Monitor</strong> error log ของแอปและ SQL Server ระหว่างดำเนินการ</li>
+        <li><strong>Cleanup</strong> หลังพ้น grace period และบันทึกวันที่หมุนเวียนล่าสุด</li>
+      </ol>
+    </section>
+
+    <!-- 09 ENCLAVES -->
+    <section id="enclaves">
+      <h2><span class="chnum">09</span>Always Encrypted with Secure Enclaves</h2>
+      <p>Always Encrypted แบบดั้งเดิมทำได้แค่ equality comparison บนคอลัมน์ deterministic <strong>Secure Enclave</strong>
+      (SQL Server 2019+) สร้างพื้นที่หน่วยความจำปลอดภัยบนเซิร์ฟเวอร์เอง ที่แม้แต่ engine/OS/ผู้ดูแลระบบก็มองไม่เห็นข้อมูลภายใน
+      — การคำนวณที่ต้องใช้ plaintext (range comparison, LIKE) จึงเกิดขึ้น <em>ภายใน enclave เท่านั้น</em></p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ประเภท</th><th>เทคโนโลยี</th><th>ใช้กับ</th></tr></thead>
+          <tbody>
+            <tr><td>VBS</td><td>Windows Hypervisor-based isolation</td><td>SQL 2019+ on Windows, Azure SQL — แนะนำสำหรับติดตั้งใหม่</td></tr>
+            <tr><td>Intel SGX</td><td>Hardware-based isolation ผ่าน CPU</td><td>ฮาร์ดแวร์ที่รองรับ SGX (ใช้น้อยลงในปัจจุบัน)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>ความสามารถเพิ่มเติมที่ Enclave เปิดให้ใช้</h3>
+      <ul>
+        <li><strong>Rich computations</strong> — <code>LIKE</code>, <code>&gt;</code>, <code>&lt;</code>, <code>BETWEEN</code>, <code>ORDER BY</code> บนข้อมูลเข้ารหัส</li>
+        <li><strong>In-place encryption</strong> — เข้ารหัสข้อมูลเดิมโดยไม่ต้องดึงออกไปที่ client</li>
+        <li><strong>In-place key rotation</strong> — หมุนเวียน CEK ภายใน enclave (บทที่ 8)</li>
+        <li><strong>Encryption type/algorithm change</strong> — สลับ randomized ↔ deterministic โดยไม่ดึงข้อมูลออก</li>
+      </ul>
+
+      <h3>เปิดใช้งาน VBS บน SQL Server</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>sp_configure 'column encryption enclave type', 1;  -- 1 = VBS
+RECONFIGURE;
+-- จากนั้น restart SQL Server service</code></pre>
+      </div>
+
+      <p>ต้องมี <strong>Attestation</strong> เพื่อยืนยันว่า enclave ไม่ถูกดัดแปลงก่อน client จะส่งคีย์เข้าไป —
+      ใช้ <strong>Host Guardian Service (HGS)</strong> สำหรับ on-premises หรือ <strong>Azure Attestation</strong>
+      (จัดการอัตโนมัติโดย Microsoft) สำหรับ Azure SQL</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">Connection String</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>Server=myserver;Database=MyProdDb;Column Encryption Setting=Enabled;
+Enclave Attestation Url=https://hgs.mycompany.local/Attestation;
+Attestation Protocol=HGS;</code></pre>
+      </div>
+
+      <h3>ตัวอย่าง Query ที่ทำได้เมื่อมี Enclave</h3>
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>-- Range query บนคอลัมน์เข้ารหัส (ทำไม่ได้ถ้าไม่มี enclave)
+SELECT * FROM dbo.Employee
+WHERE Salary BETWEEN @MinSalary AND @MaxSalary;
+
+-- LIKE บนคอลัมน์เข้ารหัส
+SELECT * FROM dbo.Customer WHERE Email LIKE @SearchPattern;</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 2 20h20L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="body"><span class="label">ข้อควรพิจารณา</span>
+        ต้องการ Enterprise/Developer Edition (ไม่รองรับ Standard สำหรับ on-prem), มี performance overhead เพิ่มขึ้น,
+        และต้องวางแผนโครงสร้าง HGS เพิ่มสำหรับ on-premises — Azure SQL จัดการ attestation ให้อัตโนมัติ ใช้งานง่ายกว่ามาก</div>
+      </div>
+    </section>
+
+    <!-- 10 LIMITATIONS -->
+    <section id="limitations">
+      <div class="part-label">ส่วนที่ 4 — ปฏิบัติการและดูแลรักษา</div>
+      <h2><span class="chnum">10</span>ข้อจำกัดและสิ่งที่ต้องพิจารณา</h2>
+
+      <h3>ข้อจำกัดด้าน Query</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>การดำเนินการ</th><th>Deterministic</th><th>Randomized</th><th>+ Enclave</th></tr></thead>
+          <tbody>
+            <tr><td>Equality (<code>=</code>)</td><td>ได้</td><td>ไม่ได้</td><td>ได้</td></tr>
+            <tr><td><code>JOIN</code></td><td>ได้</td><td>ไม่ได้</td><td>ได้</td></tr>
+            <tr><td><code>GROUP BY</code>/<code>DISTINCT</code></td><td>ได้</td><td>ไม่ได้</td><td>ได้</td></tr>
+            <tr><td><code>ORDER BY</code></td><td>ไม่ได้</td><td>ไม่ได้</td><td>ได้</td></tr>
+            <tr><td><code>LIKE</code> / range</td><td>ไม่ได้</td><td>ไม่ได้</td><td>ได้</td></tr>
+            <tr><td>ฟังก์ชัน/arithmetic</td><td>ไม่ได้</td><td>ไม่ได้</td><td>จำกัดมาก</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>ข้อจำกัดด้าน Schema/Ecosystem</h3>
+      <ul>
+        <li>ไม่รองรับ computed column, <code>CHECK</code>/<code>DEFAULT</code> constraint แบบคำนวณบนเซิร์ฟเวอร์, full-text search</li>
+        <li>Foreign key ใช้ได้ถ้าทั้งสองฝั่งเป็น deterministic ด้วย CEK/algorithm เดียวกัน</li>
+        <li>Transactional Replication, PolyBase, Linked Server มีข้อจำกัดมาก — ตรวจสอบ compatibility ก่อนใช้</li>
+        <li>Power BI DirectQuery, SSRS dynamic query builder อาจไม่รองรับ — พิจารณาสร้าง view/extract แยกสำหรับ BI</li>
+      </ul>
+
+      <div class="callout danger">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">ไม่ใช่ Silver Bullet</span>
+        Always Encrypted ไม่ป้องกัน SQL Injection บนคอลัมน์ที่ไม่เข้ารหัส และไม่ป้องกันหากแอปพลิเคชันที่มีสิทธิ์ถอดรหัสถูกบุกรุก
+        — ต้องใช้ร่วมกับ network security, authorization, และ secure coding เสมอ (defense-in-depth)</div>
+      </div>
+    </section>
+
+    <!-- 11 PERFORMANCE -->
+    <section id="performance">
+      <h2><span class="chnum">11</span>ผลกระทบด้านประสิทธิภาพ</h2>
+
+      <p>Overhead หลักเกิดที่ <strong>ฝั่ง client/application tier</strong> ไม่ใช่ที่ SQL Server engine เพราะการเข้ารหัส/ถอดรหัส
+      ทั้งหมดเกิดที่ driver:</p>
+      <ul>
+        <li><strong>CPU ฝั่ง client เพิ่มขึ้น</strong> — เข้ารหัส/ถอดรหัสทุก parameter และทุกแถวผลลัพธ์</li>
+        <li><strong>Round-trip เพิ่ม</strong> — ครั้งแรกของ query shape ใหม่ต้องเรียก <code>sp_describe_parameter_encryption</code>
+        ก่อน (แต่ถูก cache ไว้หลังจากนั้น)</li>
+        <li><strong>Key store latency</strong> — การ unwrap CEK ต้องเรียก Key Vault ทุกครั้งที่ cache หมดอายุ</li>
+        <li><strong>Query plan ด้อยกว่า</strong> — ไม่มี useful statistics/range index สำหรับคอลัมน์เข้ารหัส</li>
+      </ul>
+
+      <h3>แนวทางลด Overhead</h3>
+      <ol class="steps">
+        <li><strong>เข้ารหัสเฉพาะที่จำเป็น</strong> — เลือกเฉพาะคอลัมน์อ่อนไหวจริงตามผล data classification</li>
+        <li><strong>แยกตารางข้อมูลอ่อนไหวสูง</strong> — คั่นด้วย 1:1 relationship เพื่อไม่ให้ query ทั่วไปรับ overhead</li>
+        <li><strong>Deterministic เฉพาะที่ต้องค้นหา</strong> — ใช้ Randomized กับคอลัมน์ที่ไม่ query โดยตรง</li>
+        <li><strong>ทดสอบ Load Test</strong> — วัด throughput/latency ก่อน-หลังเข้ารหัสด้วย workload จริง</li>
+        <li><strong>Region เดียวกัน</strong> — วาง Azure Key Vault ใน region เดียวกับแอปพลิเคชันเซิร์ฟเวอร์</li>
+        <li><strong>Query shape คงที่</strong> — ใช้ parameterize แทนการเปลี่ยนโครงสร้าง query บ่อย ๆ เพื่อให้ metadata cache มีประโยชน์</li>
+      </ol>
+    </section>
+
+    <!-- 12 TROUBLESHOOTING -->
+    <section id="troubleshooting">
+      <h2><span class="chnum">12</span>การแก้ไขปัญหา</h2>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>อาการ</th><th>สาเหตุที่เป็นไปได้</th><th>วิธีแก้</th></tr></thead>
+          <tbody>
+            <tr><td>ได้ binary/base64 แทนข้อมูลจริง</td><td>ไม่ได้เปิด Column Encryption Setting</td><td>เพิ่ม property ใน connection string</td></tr>
+            <tr><td>Failed to decrypt CEK</td><td>ไม่มีสิทธิ์เข้าถึง CMK</td><td>ตรวจ certificate store / Key Vault access policy</td></tr>
+            <tr><td>Operand type clash</td><td>ชนิด/ขนาด/collation ไม่ตรง</td><td>ตรวจ data type mapping ให้ตรงเป๊ะ</td></tr>
+            <tr><td>Encryption scheme mismatch</td><td>ใช้ operation ที่ไม่รองรับ (LIKE ไม่มี enclave)</td><td>ปรับ query หรือใช้ CEK เดียวกัน/เปิด enclave</td></tr>
+            <tr><td>Query ที่เคยทำงานได้กลับ error</td><td>Dynamic SQL/ORM inline literal</td><td>เปลี่ยนเป็น <code>sp_executesql</code></td></tr>
+            <tr><td>Enclave attestation error</td><td>HGS/attestation config ผิด</td><td>ตรวจ Attestation URL และ enclave type</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>ขั้นตอนวินิจฉัยปัญหา</h3>
+      <ol class="steps">
+        <li><strong>ตรวจ Connection String</strong> — มี <code>Column Encryption Setting=Enabled</code> หรือเทียบเท่าใน driver นั้นหรือไม่</li>
+        <li><strong>ตรวจสิทธิ์ Key Store จาก client</strong> — certificate มี private key ครบหรือไม่ / service principal มีสิทธิ์ Key Vault หรือไม่</li>
+        <li><strong>ตรวจ metadata ในฐานข้อมูล</strong> — <code>sys.column_master_keys</code>, <code>sys.column_encryption_keys</code></li>
+        <li><strong>ทดสอบผ่าน SSMS โดยตรง</strong> — เปิด "Always Encrypted" ใน connection properties แล้วรัน query ทดสอบ</li>
+        <li><strong>เปิด verbose log ฝั่ง driver</strong> — ดูรายละเอียดการเรียก key store จริง</li>
+      </ol>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">Azure CLI</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>az keyvault key show --vault-name mycompany-kv --name CMK-Prod
+az role assignment list --scope /subscriptions/&lt;sub&gt;/resourceGroups/&lt;rg&gt;/providers/Microsoft.KeyVault/vaults/mycompany-kv</code></pre>
+      </div>
+    </section>
+
+    <!-- 13 BEST PRACTICES -->
+    <section id="best-practices">
+      <h2><span class="chnum">13</span>แนวทางปฏิบัติสำหรับองค์กร</h2>
+
+      <h3>Separation of Duties</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>บทบาท</th><th>สิทธิ์ที่ควรมี</th><th>สิทธิ์ที่ไม่ควรมี</th></tr></thead>
+          <tbody>
+            <tr><td>DBA</td><td>Schema, performance, backup, metadata CMK/CEK</td><td>เข้าถึง CMK จริงใน key store</td></tr>
+            <tr><td>Security/Key Team</td><td>ดูแล Key Vault/HSM, กำหนดสิทธิ์, rotation</td><td>sysadmin บนฐานข้อมูล</td></tr>
+            <tr><td>Application Service Account</td><td>unwrap/decrypt เฉพาะที่จำเป็น (runtime)</td><td>สร้าง/ลบคีย์</td></tr>
+            <tr><td>Developer</td><td>เข้าถึง dev/test ที่ใช้คีย์แยก</td><td>เข้าถึง production key store</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Defense-in-Depth — Always Encrypted เป็นแค่หนึ่งชั้น</h3>
+      <ol class="steps">
+        <li><strong>Network</strong> — TLS/SSL, firewall/VNet isolation</li>
+        <li><strong>At-Rest</strong> — ใช้ TDE ร่วมด้วยเสมอเพื่อปกป้อง backup/ไฟล์ฐานข้อมูล</li>
+        <li><strong>Column</strong> — Always Encrypted สำหรับคอลัมน์อ่อนไหวเฉพาะจุด</li>
+        <li><strong>Access Control</strong> — Row-Level Security, Dynamic Data Masking สำหรับคอลัมน์ที่ไม่ต้องเข้ารหัสเต็มรูปแบบ</li>
+        <li><strong>Application</strong> — ยืนยันตัวตนรัดกุม ป้องกัน SQL injection</li>
+        <li><strong>Monitoring</strong> — audit logging, SIEM, anomaly detection บนการเข้าถึงคีย์</li>
+      </ol>
+
+      <div class="callout note">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">Dynamic Data Masking ≠ การเข้ารหัส</span>
+        DDM เพียงซ่อนข้อมูลจาก query ทั่วไป — ผู้มีสิทธิ์สูงยังเห็นข้อมูลจริงได้ ห้ามใช้แทน Always Encrypted สำหรับข้อมูลที่ต้องปกป้องจริงจัง</div>
+      </div>
+
+      <h3>Checklist ก่อนขึ้น Production</h3>
+      <ul class="checklist">
+        <li>ทำ Data Classification และระบุคอลัมน์ที่ต้องเข้ารหัสครบถ้วน</li>
+        <li>เลือก Key Store ที่เหมาะสม (แนะนำ Azure Key Vault/HSM สำหรับ Production)</li>
+        <li>ออกแบบ Deterministic/Randomized ต่อคอลัมน์ พร้อมประเมินความจำเป็นของ Secure Enclave</li>
+        <li>ตั้งสิทธิ์แบบ Least Privilege และ Separation of Duties ครบถ้วน</li>
+        <li>ปรับโค้ดแอปพลิเคชันทั้งหมด (parameterized query, connection string)</li>
+        <li>ทดสอบ Performance/Load Test เทียบก่อน-หลังเข้ารหัส</li>
+        <li>จัดทำแผน Backup/Escrow ของคีย์ และทดสอบกระบวนการกู้คืนแล้ว</li>
+        <li>จัดทำ Runbook สำหรับ Key Rotation และ Incident Response</li>
+        <li>เปิด Audit Logging บน Key Store และตั้งค่า Alert ที่เหมาะสม</li>
+        <li>ตรวจสอบ Reporting/BI/ETL tools ทั้งหมดว่ารองรับ Always Encrypted</li>
+      </ul>
+    </section>
+
+    <!-- 14 REFERENCES -->
+    <section id="references">
+      <div class="part-label">ภาคผนวก</div>
+      <h2><span class="chnum">14</span>เอกสารอ้างอิง</h2>
+
+      <h3>เอกสารทางการของ Microsoft</h3>
+      <ul>
+        <li>Always Encrypted (Database Engine) — <code>learn.microsoft.com/sql/relational-databases/security/encryption/always-encrypted-database-engine</code></li>
+        <li>Always Encrypted with secure enclaves — <code>learn.microsoft.com/sql/relational-databases/security/encryption/always-encrypted-enclaves</code></li>
+        <li>Configure Always Encrypted using PowerShell / SSMS — <code>learn.microsoft.com/sql/relational-databases/security/encryption/</code></li>
+        <li>Overview of key management for Always Encrypted</li>
+        <li>Rotate Always Encrypted keys using PowerShell</li>
+      </ul>
+
+      <h3>เครื่องมือที่เกี่ยวข้อง</h3>
+      <ul>
+        <li><code>Microsoft.Data.SqlClient</code> (NuGet สำหรับ .NET)</li>
+        <li>Microsoft JDBC / ODBC Driver for SQL Server</li>
+        <li>PowerShell module <code>SqlServer</code> — cmdlet <code>*-SqlColumnEncryptionKey</code>, <code>*-SqlColumnMasterKey</code>, <code>Set-SqlColumnEncryption</code></li>
+        <li>Azure Key Vault และ Azure Attestation (สำหรับ Azure SQL Secure Enclaves)</li>
+      </ul>
+
+      <div class="callout note">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div class="body"><span class="label">หมายเหตุการดูแลคู่มือนี้</span>
+        คู่มืออ้างอิงพฤติกรรม ณ ช่วง SQL Server 2019–2022 และ Azure SQL Database ปัจจุบัน Microsoft อัปเดตฟีเจอร์
+        (โดยเฉพาะ Secure Enclaves และ driver รุ่นใหม่) ต่อเนื่อง ควรตรวจสอบเอกสารทางการล่าสุดก่อนใช้งานจริงในระบบสำคัญ</div>
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      <span>Always Encrypted — คู่มือฉบับสมบูรณ์สำหรับ SQL Server · Enterprise Guide</span>
+      <a href="#overview">กลับสู่จุดเริ่มต้น ↑</a>
+    </footer>
+  </main>
+</div>
+
+<button class="back-top" id="backTop" aria-label="กลับขึ้นด้านบน">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script>
+  // scroll progress
+  var progress = document.getElementById('progress');
+  function updateProgress() {
+    var h = document.documentElement;
+    var scrolled = h.scrollTop;
+    var height = h.scrollHeight - h.clientHeight;
+    progress.style.width = (height > 0 ? (scrolled / height) * 100 : 0) + '%';
+    document.getElementById('backTop').classList.toggle('show', scrolled > 600);
+  }
+  document.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  document.getElementById('backTop').addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // mobile nav toggle
+  var toc = document.getElementById('toc');
+  var navtoggle = document.getElementById('navtoggle');
+  navtoggle.addEventListener('click', function () {
+    var open = toc.classList.toggle('open');
+    navtoggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  toc.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () { toc.classList.remove('open'); });
+  });
+
+  // scrollspy
+  var links = Array.prototype.slice.call(toc.querySelectorAll('a'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      var id = '#' + entry.target.id;
+      var link = links.find(function (a) { return a.getAttribute('href') === id; });
+      if (!link) return;
+      if (entry.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(function (s) { if (s) io.observe(s); });
+
+  // copy buttons
+  document.querySelectorAll('.copybtn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = btn.closest('.codecard').querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(function () {
+        var orig = btn.textContent;
+        btn.textContent = 'คัดลอกแล้ว ✓';
+        setTimeout(function () { btn.textContent = orig; }, 1600);
+      });
+    });
+  });
+</script>
