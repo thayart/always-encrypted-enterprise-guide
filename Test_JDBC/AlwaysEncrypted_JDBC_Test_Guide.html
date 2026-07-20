@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Always Encrypted JDBC Test</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:1000px;margin:40px auto;line-height:1.5}
+pre{background:#f4f4f4;padding:12px;overflow:auto}
+code{font-family:Consolas,monospace}
+</style>
+</head>
+<body>
+<h1>ทดสอบ Microsoft JDBC Driver กับ SQL Server Always Encrypted</h1>
+
+<p>วัตถุประสงค์: พิสูจน์ว่า Microsoft JDBC Driver สามารถ Encrypt Parameter ได้หรือไม่
+โดยไม่เกี่ยวกับ Kafka Connect</p>
+
+<h2>1. เตรียมไฟล์</h2>
+<ul>
+<li>JDK 11+</li>
+<li>mssql-jdbc-8.4.1.jre11.jar</li>
+</ul>
+
+<h2>2. สร้างไฟล์ <code>TestAE.java</code></h2>
+
+<pre><code>
+import java.sql.*;
+
+public class TestAE {
+
+    public static void main(String[] args) {
+
+        try {
+
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+
+            String url =
+                "jdbc:sqlserver://YOURSERVER:1433;" +
+                "databaseName=CoreClaim;" +
+                "encrypt=true;" +
+                "trustServerCertificate=true;" +
+                "columnEncryptionSetting=Enabled;";
+
+            String user = "YOURUSER";
+            String password = "YOURPASSWORD";
+
+            System.out.println(url);
+
+            Connection conn = DriverManager.getConnection(url, user, password);
+
+            PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO ext.Person_Encrypt " +
+                "(PersonId, TitleId, IdentityCard) " +
+                "VALUES (?, ?, ?)");
+
+            ps.setInt(1, 999999);
+            ps.setInt(2, 1);
+            ps.setString(3, "1234567890123");
+
+            int rows = ps.executeUpdate();
+
+            System.out.println("Rows inserted = " + rows);
+
+            PreparedStatement ps2 = conn.prepareStatement(
+                "SELECT IdentityCard FROM ext.Person_Encrypt WHERE PersonId=?");
+
+            ps2.setInt(1, 999999);
+
+            ResultSet rs = ps2.executeQuery();
+
+            while(rs.next()){
+                System.out.println("IdentityCard = " + rs.getString(1));
+            }
+
+            rs.close();
+            ps2.close();
+            ps.close();
+            conn.close();
+
+            System.out.println("SUCCESS");
+
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+
+<h2>3. Compile</h2>
+
+<pre><code>javac -cp ".;mssql-jdbc-8.4.1.jre11.jar" TestAE.java</code></pre>
+
+<h2>4. Run</h2>
+
+<pre><code>java -cp ".;mssql-jdbc-8.4.1.jre11.jar" TestAE</code></pre>
+
+<h2>การแปลผล</h2>
+
+<table border="1" cellpadding="6" cellspacing="0">
+<tr><th>ผลลัพธ์</th><th>ความหมาย</th></tr>
+<tr><td>SUCCESS และอ่าน IdentityCard ได้</td><td>Always Encrypted ทำงานถูกต้อง ปัญหาอยู่ที่ Kafka Connect</td></tr>
+<tr><td>Operand type clash</td><td>Driver ไม่ได้ Encrypt Parameter ให้ ตรวจ URL และ CMK</td></tr>
+<tr><td>Certificate / CEK Error</td><td>ตรวจ Certificate Store, Private Key และสิทธิ์</td></tr>
+</table>
+
+<h2>Checklist</h2>
+<ul>
+<li>ใช้ Microsoft JDBC Driver</li>
+<li>URL มี <code>columnEncryptionSetting=Enabled</code></li>
+<li>URL มี <code>encrypt=true</code></li>
+<li>Certificate มี Private Key</li>
+<li>CMK อยู่ใน Windows Certificate Store และ Process มีสิทธิ์อ่าน</li>
+</ul>
+
+</body>
+</html>
