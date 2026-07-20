@@ -64,6 +64,13 @@ public class TestAE {
 
         } catch (Exception e) {
             e.printStackTrace();
+
+             Throwable t = e.getCause();
+    while (t != null) {
+        System.out.println("CAUSE: " + t.getMessage());
+        t.printStackTrace();
+        t = t.getCause();
+    }
         }
 
     }
