@@ -33,7 +33,7 @@ public class TestAE {
 
             PreparedStatement ps = conn.prepareStatement(sql);
 
-            ps.setInt(1, 999999);
+            ps.setInt(1, 999998);
             ps.setInt(2, 1);
             ps.setNString(3, "1234567890123");
 

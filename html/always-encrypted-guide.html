@@ -978,6 +978,165 @@ WHEN NOT MATCHED THEN
   --key-permissions get unwrapKey wrapKey</code></pre>
       </div>
 
+      <h3>สร้าง certificate สำหรับ Always Encrypted บน Windows Server</h3>
+      <p>หากต้องใช้ Windows Certificate Store เป็น key store สำหรับ CMK บน Windows Server (เช่น SQL Server host หรือ application server) ขั้นตอนที่ควรทำมี 4 ขั้นตอนหลัก: สร้าง certificate → ตรวจสอบ thumbprint → import ลงเครื่องอื่น ๆ → ใช้กับ SQL Server</p>
+
+      <h4>ขั้นตอนที่ 1: สร้าง certificate บน Windows Server</h4>
+      <p>คำสั่งต่อไปนี้จะสร้าง certificate ใหม่ใน <code>Cert:\LocalMachine\My</code> และส่งออกไฟล์ <code>.pfx</code> พร้อม private key:</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">PowerShell</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>$certPath = "C:\certs"
+New-Item -ItemType Directory -Force -Path $certPath | Out-Null
+
+$cert = New-SelfSignedCertificate `
+  -CertStoreLocation "Cert:\LocalMachine\My" `
+  -DnsName "sql.contoso.local" `
+  -FriendlyName "AlwaysEncrypted-CMK" `
+  -KeyExportPolicy Exportable `
+  -NotAfter (Get-Date).AddYears(2)
+
+$securePassword = ConvertTo-SecureString -String "P@ssw0rd!123" -Force -AsPlainText
+Export-PfxCertificate -Cert $cert -FilePath "$certPath\alwaysencrypted-cmk.pfx" -Password $securePassword
+Export-Certificate -Cert $cert -FilePath "$certPath\alwaysencrypted-cmk.cer"</code></pre>
+      </div>
+
+      <p>สิ่งที่คำสั่งนี้ทำคือ สร้าง certificate ใหม่ใน <code>Cert:\LocalMachine\My</code>, ส่งออกไฟล์ <code>.pfx</code> ที่มี private key สำหรับใช้กับ CMK และไฟล์ <code>.cer</code> สำหรับแจกจ่ายหรือ import ต่อ</p>
+
+      <h4>ขั้นตอนที่ 2: ตรวจสอบ certificate และเก็บ thumbprint</h4>
+      <p>หลังสร้างเสร็จ ให้ดึงค่า <code>thumbprint</code> เพื่อใช้ใน SQL Server:</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">PowerShell</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>$cert = Get-ChildItem Cert:\LocalMachine\My | Where-Object { $_.FriendlyName -eq "AlwaysEncrypted-CMK" } | Select-Object -First 1
+$cert.Thumbprint
+$cert.Subject</code></pre>
+      </div>
+
+      <p><code>thumbprint</code> คือค่าที่ SQL Server จะใช้ใน <code>KEY_PATH</code> เมื่อสร้าง Column Master Key (CMK)</p>
+
+      <h4>ขั้นตอนที่ 3: Import certificate ลงเครื่องอื่น ๆ</h4>
+      <p>หากต้องใช้ certificate นี้ในเครื่องอื่น (เช่น client machine หรือ application server) ให้ import ไฟล์ <code>.pfx</code> ที่ส่งออกมาเข้าสู่ store ดังนี้:</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">PowerShell</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>$pwd = Read-Host "กรอก password ของไฟล์ .pfx" -AsSecureString
+Import-PfxCertificate -FilePath "C:\certs\alwaysencrypted-cmk.pfx" `
+  -CertStoreLocation "Cert:\LocalMachine\My" `
+  -Password $pwd</code></pre>
+      </div>
+
+      <p>ถ้าต้องการ import ลง Current User แทน Local Machine ให้เปลี่ยนค่าเป็น <code>Cert:\CurrentUser\My</code></p>
+
+      <h4>ขั้นตอนที่ 4: ใช้ certificate กับ SQL Server / Always Encrypted</h4>
+      <p>เมื่อสร้าง Column Master Key (CMK) ใน SQL Server ให้ใช้ค่า <code>thumbprint</code> ที่ได้จากขั้นตอนก่อนหน้า:</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>CREATE COLUMN MASTER KEY MyCMK
+WITH (
+    KEY_STORE_PROVIDER_NAME = N'MSSQL_CERTIFICATE_STORE',
+    KEY_PATH = N'LocalMachine/My/&lt;thumbprint&gt;'
+);</code></pre>
+      </div>
+
+      <p>ตัวอย่างโครงสร้างคำสั่งสร้าง Column Encryption Key (CEK):</p>
+
+      <div class="codecard">
+        <div class="codebar"><span class="codelang">T-SQL</span><button class="copybtn" data-copy>คัดลอก</button></div>
+        <pre><code>CREATE COLUMN ENCRYPTION KEY MyCEK
+WITH VALUES (
+    COLUMN_MASTER_KEY = MyCMK,
+    ALGORITHM = 'RSA_OAEP',
+    ENCRYPTED_VALUE = 0x&lt;hex&gt;
+);</code></pre>
+      </div>
+
+      <p>ในงานจริง ค่าของ <code>ENCRYPTED_VALUE</code> มักจะถูกสร้างโดย client library หรือ driver ที่รองรับ Always Encrypted (เช่น .NET SqlClient) ไม่ได้เป็นค่าที่คุณสร้างด้วยมือโดยตรง</p>
+
+      <p>สำหรับการใช้งานจริง ควรเก็บไฟล์ <code>.pfx</code> ในที่ปลอดภัย หลีกเลี่ยงการเก็บ password ใน script หรือคำสั่งที่เห็นได้ทั่วไป และควรลบไฟล์ชั่วคราวหลัง import แล้วถ้าหน่วยงานไม่ต้องการเก็บไว้ต่อ</p>
+
+      <h3>Import Certificate และตั้งค่าพื้นฐาน OS บน RHEL9</h3>
+      <p>สำหรับแอปพลิเคชันหรือ client runtime ที่รันบน Red Hat Enterprise Linux 9 และต้องเข้าถึง CMK ที่อ้างอิง certificate-based key store ควรเตรียมระบบให้พร้อมก่อนใช้งานจริง โดยมีขั้นตอนที่แนะนำดังนี้:</p>
+
+      <ol class="steps">
+        <li><strong>ติดตั้งแพ็กเกจพื้นฐาน</strong>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo dnf update -y
+sudo dnf install -y openssl ca-certificates unzip</code></pre>
+          </div>
+        </li>
+        <li><strong>จัดเก็บไฟล์ certificate ในตำแหน่งที่ปลอดภัย</strong>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo mkdir -p /opt/alwaysencrypted/certs
+sudo cp /path/to/client-certificate.pfx /opt/alwaysencrypted/certs/
+sudo chown root:root /opt/alwaysencrypted/certs/client-certificate.pfx
+sudo chmod 600 /opt/alwaysencrypted/certs/client-certificate.pfx</code></pre>
+          </div>
+          <p>ควรเก็บไฟล์ที่มี private key ไว้ในโฟลเดอร์ที่มีสิทธิ์เข้าถึงจำกัด และควรลบไฟล์ชั่วคราวหลัง import เสร็จแล้ว หากไม่มีความจำเป็นต้องเก็บต่อ</p>
+        </li>
+        <li><strong>แปลงไฟล์ PKCS#12 เป็น PEM สำหรับ OpenSSL</strong>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo openssl pkcs12 -in /opt/alwaysencrypted/certs/client-certificate.pfx -clcerts -nokeys \
+  -out /etc/pki/tls/certs/client-cert.pem
+
+sudo openssl pkcs12 -in /opt/alwaysencrypted/certs/client-certificate.pfx -nocerts -nodes \
+  -out /etc/pki/tls/private/client-key.pem
+
+sudo chown root:root /etc/pki/tls/certs/client-cert.pem /etc/pki/tls/private/client-key.pem
+sudo chmod 644 /etc/pki/tls/certs/client-cert.pem
+sudo chmod 600 /etc/pki/tls/private/client-key.pem</code></pre>
+          </div>
+        </li>
+        <li><strong>ติดตั้ง certificate เข้า trust store ของระบบ</strong>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo cp /etc/pki/tls/certs/client-cert.pem /etc/pki/ca-trust/source/anchors/
+sudo update-ca-trust</code></pre>
+          </div>
+          <p>หากต้องใช้ certificate chain จาก CA ภายนอก ให้รวมไฟล์ CA bundle ลงในโฟลเดอร์ anchors ก่อนเรียกคำสั่ง <code>update-ca-trust</code></p>
+        </li>
+        <li><strong>ตรวจสอบความถูกต้องของ certificate และสิทธิ์ไฟล์</strong>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo openssl x509 -in /etc/pki/tls/certs/client-cert.pem -noout -subject -issuer
+sudo ls -l /etc/pki/tls/private/client-key.pem</code></pre>
+          </div>
+        </li>
+        <li><strong>ตั้งค่าพื้นฐาน OS สำหรับความปลอดภัย</strong>
+          <ul>
+            <li>รักษา SELinux ในโหมด <code>Enforcing</code> และตรวจสอบ context ของไฟล์ certificate ด้วย <code>restorecon</code></li>
+            <li>ใช้ <code>umask 077</code> หรือ permission ที่จำกัดเมื่อสร้างไฟล์คีย์ใหม่</li>
+            <li>จำกัดสิทธิ์การเข้าถึง private key ให้เฉพาะ root หรือ service account ที่จำเป็นจริง ๆ</li>
+            <li>ถ้ารันแอปพลิเคชันในระบบปิดให้ใช้ service account ที่ไม่ใช่ root เพื่อป้องกันการเปิดเผย private key</li>
+          </ul>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo restorecon -Rv /etc/pki/tls /opt/alwaysencrypted/certs</code></pre>
+          </div>
+        </li>
+        <li><strong>สำหรับแอปพลิเคชัน Java/JDBC</strong>
+          <div class="codecard">
+            <div class="codebar"><span class="codelang">Bash</span><button class="copybtn" data-copy>คัดลอก</button></div>
+            <pre><code>sudo dnf install -y java-17-openjdk-devel
+sudo keytool -importkeystore \
+  -srckeystore /opt/alwaysencrypted/certs/client-certificate.pfx \
+  -srcstoretype PKCS12 \
+  -destkeystore /etc/ssl/java/cacerts \
+  -deststoretype JKS \
+  -storepass changeit</code></pre>
+          </div>
+          <div class="callout warn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+            <div class="body"><span class="label">คำแนะนำด้านความปลอดภัย</span>
+            สำหรับ production ควรใช้ password ที่ซับซ้อนและเก็บไว้ใน secret management แทนการ hard-code ลงใน script หรือคำสั่งติดตั้ง</div>
+          </div>
+        </li>
+      </ol>
+
       <h3>Managed Identity แทนการฝัง secret</h3>
       <div class="codecard">
         <div class="codebar"><span class="codelang">C#</span><button class="copybtn" data-copy>คัดลอก</button></div>
